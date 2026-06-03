@@ -1,15 +1,7 @@
 require('dotenv').config();
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.sendgrid.net',
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: 'apikey',
-    pass: process.env.SENDGRID_API_KEY || process.env.SMTP_PASS,
-  },
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY || process.env.SMTP_PASS || (() => { throw new Error('SENDGRID_API_KEY env var is missing'); })());
 
 const SIGNAL_COLORS = {
   BUY:     '#1a7a1a',
@@ -107,9 +99,9 @@ async function sendAlert({ pipeline, timestamp, title, sourceUrl, fullText, summ
 
     <!-- Header Banner -->
     <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:#fff;padding:22px 24px;border-radius:8px;margin-bottom:24px;">
-      <div style="display:flex;align-items:center;margin-bottom:12px;">
+      <div style="margin-bottom:12px;">
         <span style="font-size:24px;margin-right:10px;">⚡</span>
-        <h1 style="margin:0;color:#76b900;font-size:20px;letter-spacing:0.5px;">Jensen Huang / Nvidia Monitor Alert</h1>
+        <span style="color:#76b900;font-size:20px;font-weight:bold;letter-spacing:0.5px;">Jensen Huang / Nvidia Monitor Alert</span>
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:14px;line-height:2;">
         <tr><td style="color:#aaa;width:120px;">Pipeline</td><td style="color:#fff;font-weight:bold;">${escapeHtml(pipeline)}</td></tr>
@@ -148,15 +140,15 @@ async function sendAlert({ pipeline, timestamp, title, sourceUrl, fullText, summ
 </body>
 </html>`;
 
-  const info = await transporter.sendMail({
-    from: `"Jensen Monitor" <${process.env.SENDER_EMAIL}>`,
-    to: process.env.RECIPIENT_EMAIL,
+  const fromAddr = process.env.SENDER_EMAIL || process.env.RECIPIENT_EMAIL;
+  const [response] = await sgMail.send({
+    from:    { name: 'Jensen Monitor', email: fromAddr },
+    to:      process.env.RECIPIENT_EMAIL,
     subject,
     html,
   });
 
-  console.log(`[Email] Sent: "${subject}" → ${info.messageId}`);
-  return info;
+  console.log(`[Email] Sent: "${subject}" → msgId: ${response.headers['x-message-id'] || response.statusCode}`);
 }
 
 module.exports = { sendAlert };
