@@ -147,16 +147,21 @@ async function checkFeed(feed) {
     const { companyMentions, marketSignals, summary } = await extractMentions(analysisInput, item.link || feed.url);
 
     if (companyMentions.length > 0 || marketSignals.length > 0) {
-      await sendAlert({
-        pipeline: `Pipeline 0 — ${feed.name}`,
-        timestamp: new Date().toISOString(),
-        title: item.title,
-        sourceUrl: item.link || feed.url,
-        fullText: analysisInput,
-        summary: summary || item.description || item.title,
-        companyMentions,
-        marketSignals,
-      });
+      try {
+        await sendAlert({
+          pipeline: `Pipeline 0 — ${feed.name}`,
+          timestamp: new Date().toISOString(),
+          title: item.title,
+          sourceUrl: item.link || feed.url,
+          fullText: analysisInput,
+          summary: summary || item.description || item.title,
+          companyMentions,
+          marketSignals,
+        });
+      } catch (err) {
+        console.error(`[P0] sendAlert FAILED: ${err.message}`);
+        console.error(err.stack);
+      }
     } else {
       console.log(`[Pipeline 0] No actionable signals in: ${item.title}`);
     }

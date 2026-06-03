@@ -191,16 +191,21 @@ ${textToAnalyze}`;
     const hasContent    = companyMentions.length > 0 || marketSignals.length > 0;
 
     if (hasContent && !noQuotesFound) {
-      await sendAlert({
-        pipeline: `Pipeline 3 — ${feed.name}`,
-        timestamp: new Date().toISOString(),
-        title: item.title,
-        sourceUrl: item.link || feed.url,
-        fullText: analysisInput,
-        summary: summary || '',
-        companyMentions,
-        marketSignals,
-      });
+      try {
+        await sendAlert({
+          pipeline: `Pipeline 3 — ${feed.name}`,
+          timestamp: new Date().toISOString(),
+          title: item.title,
+          sourceUrl: item.link || feed.url,
+          fullText: analysisInput,
+          summary: summary || '',
+          companyMentions,
+          marketSignals,
+        });
+      } catch (err) {
+        console.error(`[P3] sendAlert FAILED: ${err.message}`);
+        console.error(err.stack);
+      }
     } else {
       console.log(`[Pipeline 3] No verbatim Jensen quotes confirmed in: ${item.title}`);
     }

@@ -206,16 +206,21 @@ URL: ${entry.link}
 TRANSCRIPT:
 ${transcript}`;
 
-      await sendAlert({
-        pipeline: `Pipeline 1 — ${channel.name}`,
-        timestamp: new Date().toISOString(),
-        title: entry.title,
-        sourceUrl: entry.link,
-        fullText,
-        summary: summary || entry.summary || '',
-        companyMentions,
-        marketSignals,
-      });
+      try {
+        await sendAlert({
+          pipeline: `Pipeline 1 — ${channel.name}`,
+          timestamp: new Date().toISOString(),
+          title: entry.title,
+          sourceUrl: entry.link,
+          fullText,
+          summary: summary || entry.summary || '',
+          companyMentions,
+          marketSignals,
+        });
+      } catch (err) {
+        console.error(`[P1] sendAlert FAILED: ${err.message}`);
+        console.error(err.stack);
+      }
     } else {
       console.log(`[Pipeline 1] No actionable signals in: ${entry.title}`);
     }

@@ -185,16 +185,21 @@ ${fullText}`;
     const { companyMentions, marketSignals, summary } = await extractMentions(analysisInput, item.link || IR_PAGE_URL);
 
     if (companyMentions.length > 0 || marketSignals.length > 0) {
-      await sendAlert({
-        pipeline: 'Pipeline 2 — Nvidia Investor Relations',
-        timestamp: new Date().toISOString(),
-        title: item.title,
-        sourceUrl: item.link || IR_PAGE_URL,
-        fullText: analysisInput,
-        summary: summary || item.description || '',
-        companyMentions,
-        marketSignals,
-      });
+      try {
+        await sendAlert({
+          pipeline: 'Pipeline 2 — Nvidia Investor Relations',
+          timestamp: new Date().toISOString(),
+          title: item.title,
+          sourceUrl: item.link || IR_PAGE_URL,
+          fullText: analysisInput,
+          summary: summary || item.description || '',
+          companyMentions,
+          marketSignals,
+        });
+      } catch (err) {
+        console.error(`[P2] sendAlert FAILED: ${err.message}`);
+        console.error(err.stack);
+      }
     } else {
       console.log(`[Pipeline 2] No actionable signals in: ${item.title}`);
     }
