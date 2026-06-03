@@ -1,0 +1,18 @@
+{
+  "name": "jensen-monitor",
+  "version": "1.0.0",
+  "description": "Jensen Huang / Nvidia company monitor bot for stock trading",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "axios": "^1.7.0",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.0",
+    "youtube-transcript": "^1.2.1"
+  }
+}
