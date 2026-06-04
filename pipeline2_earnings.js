@@ -72,6 +72,37 @@ async function extractMentions(text, source) {
   }
 }
 
+function extractDateFromPage($) {
+  // 1. Meta tags (most reliable)
+  const metaDate = $('meta[property="article:published_time"]').attr('content')
+    || $('meta[name="date"]').attr('content')
+    || $('meta[name="pubdate"]').attr('content')
+    || $('meta[name="DC.date"]').attr('content');
+  if (metaDate && !isNaN(new Date(metaDate))) return new Date(metaDate).toISOString();
+
+  // 2. <time datetime="...">
+  const timeAttr = $('time[datetime]').first().attr('datetime');
+  if (timeAttr && !isNaN(new Date(timeAttr))) return new Date(timeAttr).toISOString();
+
+  // 3. Common date class/element patterns on IR pages
+  const dateSelectors = [
+    '.press-release-date', '.release-date', '.pub-date', '.news-date',
+    '.article-date', '.date-published', '.post-date', '.entry-date',
+    '[class*="ReleaseDate"]', '[class*="releaseDate"]', '[class*="PressDate"]',
+  ];
+  for (const sel of dateSelectors) {
+    const text = $(sel).first().text().trim();
+    const parsed = new Date(text);
+    if (text && !isNaN(parsed)) return parsed.toISOString();
+  }
+
+  // 4. <time> without datetime attr
+  const timeText = $('time').first().text().trim();
+  if (timeText && !isNaN(new Date(timeText))) return new Date(timeText).toISOString();
+
+  return null;
+}
+
 async function fetchFullPressRelease(url) {
   try {
     const { data } = await axios.get(url, {
@@ -82,18 +113,24 @@ async function fetchFullPressRelease(url) {
       },
     });
     const $ = cheerio.load(data);
+
+    const pubDate = extractDateFromPage($);
+
     $('script, style, nav, footer, header, .cookie-banner, .advertisement, aside, .social-share').remove();
     const selectors = [
       '.press-release-body', '.news-body', 'article', '[role="main"]',
       'main', '.content-body', '#content', '.article-content', '.post-content',
     ];
+    let text = null;
     for (const sel of selectors) {
-      const text = $(sel).text().replace(/\s+/g, ' ').trim();
-      if (text.length > 400) return text;
+      const t = $(sel).text().replace(/\s+/g, ' ').trim();
+      if (t.length > 400) { text = t; break; }
     }
-    return $('body').text().replace(/\s+/g, ' ').trim();
+    if (!text) text = $('body').text().replace(/\s+/g, ' ').trim();
+
+    return { text, pubDate };
   } catch {
-    return null;
+    return { text: null, pubDate: null };
   }
 }
 
@@ -138,7 +175,17 @@ async function fetchViaDirectScrape() {
       if (!title || title.length < 10) return;
       if (!href.match(/press-release|news|announcement/i)) return;
       const link = href.startsWith('http') ? href : `https://investor.nvidia.com${href}`;
-      items.push({ title, link, pubDate: new Date().toISOString(), description: '', guid: link });
+
+      // Try to find a date in the surrounding element or its siblings/parent
+      const $parent = $(el).closest('li, tr, div, article');
+      let pubDate = null;
+      const dateText = $parent.find('time, .date, [class*="date"], [class*="Date"]').first().text().trim()
+        || $parent.find('time').attr('datetime');
+      if (dateText && !isNaN(new Date(dateText))) {
+        pubDate = new Date(dateText).toISOString();
+      }
+
+      items.push({ title, link, pubDate, description: '', guid: link });
     });
     return items;
   } catch (err) {
@@ -159,7 +206,7 @@ async function run() {
   console.log(`[Pipeline 2] Found ${items.length} press releases`);
 
   for (const item of items) {
-    if (!isWithinDays(item.pubDate, 7)) {
+    if (item.pubDate && !isWithinDays(item.pubDate, 7)) {
       console.log(`[Pipeline 2] Old item, skipping: ${item.title}`);
       continue;
     }
@@ -171,11 +218,20 @@ async function run() {
     console.log(`[Pipeline 2] Processing: ${item.title}`);
 
     let fullText = null;
-    if (item.link) fullText = await fetchFullPressRelease(item.link);
+    let articlePubDate = null;
+    if (item.link) {
+      const result = await fetchFullPressRelease(item.link);
+      fullText = result.text;
+      articlePubDate = result.pubDate;
+    }
     fullText = fullText || item.description || item.title;
 
+    // Prefer date extracted from article HTML, then RSS pubDate
+    const pubDate = articlePubDate || item.pubDate || null;
+    console.log(`[Pipeline 2] Publication date: ${pubDate || 'unknown'}`);
+
     const analysisInput = `Title: ${item.title}
-Date: ${item.pubDate}
+Date: ${pubDate || 'unknown'}
 Source: Nvidia Investor Relations
 URL: ${item.link}
 
@@ -188,7 +244,7 @@ ${fullText}`;
       try {
         await sendAlert({
           pipeline: 'Pipeline 2 — Nvidia Investor Relations',
-          timestamp: new Date().toISOString(),
+          timestamp: pubDate || new Date().toISOString(),
           title: item.title,
           sourceUrl: item.link || IR_PAGE_URL,
           fullText: analysisInput,
