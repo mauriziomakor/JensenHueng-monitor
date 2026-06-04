@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const DB_FILE = path.join(__dirname, 'processed.json');
-const MAX_AGE_DAYS = 7;
+const MAX_AGE_DAYS = 7; // dedup store retention — keep seen IDs for 7 days
 const MAX_AGE_MS = MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
 
 function loadDB() {
@@ -34,11 +34,11 @@ function markProcessed(id) {
   saveDB(db);
 }
 
-function isWithinDays(dateStr, days = 7) {
+function isWithinHours(dateStr, hours = 6) {
   if (!dateStr) return false;
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return false;
-  return date > new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  return date > new Date(Date.now() - hours * 60 * 60 * 1000);
 }
 
-module.exports = { isProcessed, markProcessed, isWithinDays };
+module.exports = { isProcessed, markProcessed, isWithinHours };

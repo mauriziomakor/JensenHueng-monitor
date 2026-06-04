@@ -2,7 +2,7 @@ require('dotenv').config();
 const axios = require('axios');
 const cheerio = require('cheerio');
 const Anthropic = require('@anthropic-ai/sdk');
-const { isProcessed, markProcessed, isWithinDays } = require('./db');
+const { isProcessed, markProcessed, isWithinHours } = require('./db');
 const { sendAlert } = require('./email');
 
 const FEEDS = [
@@ -156,7 +156,7 @@ async function checkFeed(feed) {
   console.log(`[Pipeline 3] ${feed.name}: ${items.length} items`);
 
   for (const item of items) {
-    if (!isWithinDays(item.pubDate, 7)) continue;
+    if (!isWithinHours(item.pubDate, 6)) continue;
     if (isProcessed(item.guid)) continue;
 
     // Pre-filter using patterns before making any network requests

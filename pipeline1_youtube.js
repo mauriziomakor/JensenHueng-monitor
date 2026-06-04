@@ -2,7 +2,7 @@ require('dotenv').config();
 const axios = require('axios');
 const cheerio = require('cheerio');
 const Anthropic = require('@anthropic-ai/sdk');
-const { isProcessed, markProcessed, isWithinDays } = require('./db');
+const { isProcessed, markProcessed, isWithinHours } = require('./db');
 const { sendAlert } = require('./email');
 
 let YoutubeTranscript;
@@ -162,7 +162,7 @@ async function checkChannel(channel) {
   console.log(`[Pipeline 1] ${channel.name}: ${entries.length} entries`);
 
   for (const entry of entries) {
-    if (!isWithinDays(entry.published, 7)) {
+    if (!isWithinHours(entry.published, 6)) {
       console.log(`[Pipeline 1] Old video, skipping: ${entry.title}`);
       continue;
     }

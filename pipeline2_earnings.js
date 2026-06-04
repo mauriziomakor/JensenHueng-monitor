@@ -2,7 +2,7 @@ require('dotenv').config();
 const axios = require('axios');
 const cheerio = require('cheerio');
 const Anthropic = require('@anthropic-ai/sdk');
-const { isProcessed, markProcessed, isWithinDays } = require('./db');
+const { isProcessed, markProcessed, isWithinHours } = require('./db');
 const { sendAlert } = require('./email');
 
 const IR_PAGE_URL = 'https://investor.nvidia.com/news/press-releases/default.aspx';
@@ -206,7 +206,7 @@ async function run() {
   console.log(`[Pipeline 2] Found ${items.length} press releases`);
 
   for (const item of items) {
-    if (item.pubDate && !isWithinDays(item.pubDate, 7)) {
+    if (item.pubDate && !isWithinHours(item.pubDate, 6)) {
       console.log(`[Pipeline 2] Old item, skipping: ${item.title}`);
       continue;
     }
