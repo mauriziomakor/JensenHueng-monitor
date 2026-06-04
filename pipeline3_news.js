@@ -74,7 +74,7 @@ CRITICAL INSTRUCTION: Only extract content where Jensen Huang is DIRECTLY quoted
 
 Extract ONLY from direct verbatim quotes:
 
-1. Company mentions Jensen Huang directly mentions in his own words:
+1. Company mentions Jensen Huang directly mentions in his own words — but only if that company is publicly traded on a stock exchange where a retail investor could buy stock (e.g. NYSE, NASDAQ, LSE, TSX, ASX). Exclude private companies, government entities, NGOs, or any organisation not publicly listed:
 {
   "company": "full official company name",
   "quote": "EXACT VERBATIM words Jensen Huang said, as quoted in the article",

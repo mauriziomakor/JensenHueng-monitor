@@ -76,7 +76,7 @@ ${transcript.slice(0, 10000)}
 
 Extract ALL of the following and return as valid JSON only — no markdown, no explanation, no code blocks:
 
-1. Company mentions: every company Jensen Huang mentions or discusses
+1. Company mentions: every company Jensen Huang mentions or discusses — but only if it is publicly traded on a stock exchange where a retail investor could buy stock (e.g. NYSE, NASDAQ, LSE, TSX, ASX). Exclude private companies, government entities, NGOs, or any organisation not publicly listed.
 {
   "company": "full official company name",
   "quote": "exact verbatim words Jensen said — DO NOT paraphrase, must be his exact words",

@@ -19,7 +19,7 @@ ${text.slice(0, 12000)}
 
 Extract ALL of the following and return as valid JSON only — no markdown, no explanation, no code blocks:
 
-1. Company mentions: every company referenced (partners, customers, competitors, suppliers, joint ventures, acquisition targets, etc.)
+1. Company mentions: every company referenced (partners, customers, competitors, suppliers, joint ventures, acquisition targets, etc.) — but only if it is publicly traded on a stock exchange where a retail investor could buy stock (e.g. NYSE, NASDAQ, LSE, TSX, ASX). Exclude private companies, government entities, NGOs, or any organisation not publicly listed.
 {
   "company": "full official company name",
   "quote": "exact verbatim text from source",
