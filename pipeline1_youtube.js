@@ -96,22 +96,38 @@ Signal: BUY = praised/endorsed/partnering/working with; SELL = threatened/droppi
   "type": "market_signal"
 }
 
-3. One-paragraph summary of the video's key topics, statements by Jensen, and overall market significance.
+3. Policy signals — detect any government policy, regulatory action, executive order, law, or government announcement that could impact a sector or industry. Focus on: export controls / chip bans / semiconductor tariffs, AI regulation, energy policy (data center power), trade deals or sanctions affecting tech supply chains, healthcare/biotech policy, or any named government action affecting a specific industry.
+{
+  "policy_topic": "concise label (e.g. 'Chip Export Controls', 'AI Regulation', 'Semiconductor Tariffs')",
+  "sector": "the sector most impacted (e.g. 'Technology / Semiconductors', 'AI / Data Centers', 'Energy')",
+  "signal": "BULLISH|BEARISH",
+  "quote": "exact verbatim passage from the text",
+  "context": "2-3 sentences: what the policy is, which sector it affects, why bullish or bearish",
+  "companies": [{"name": "full official company name", "ticker": "EXCHANGE:TICKER"}],
+  "type": "policy_signal"
+}
+Only include companies publicly traded on NYSE, NASDAQ, LSE, TSX, ASX, or similar retail-accessible exchange.
+BULLISH = policy favours the sector; BEARISH = policy harms the sector.
+
+4. One-paragraph summary of the video's key topics, statements by Jensen, and overall market significance.
 
 Return ONLY:
 {
   "companyMentions": [...],
   "marketSignals": [...],
+  "policySignals": [...],
   "summary": "..."
 }`;
 
 function parseClaudeJSON(text) {
   try {
     const match = text.match(/\{[\s\S]*\}/);
-    if (!match) return { companyMentions: [], marketSignals: [], summary: '' };
-    return JSON.parse(match[0]);
+    if (!match) return { companyMentions: [], marketSignals: [], policySignals: [], summary: '' };
+    const parsed = JSON.parse(match[0]);
+    if (!parsed.policySignals) parsed.policySignals = [];
+    return parsed;
   } catch {
-    return { companyMentions: [], marketSignals: [], summary: '' };
+    return { companyMentions: [], marketSignals: [], policySignals: [], summary: '' };
   }
 }
 
@@ -195,9 +211,9 @@ async function checkChannel(channel) {
       continue;
     }
 
-    const { companyMentions, marketSignals, summary } = await extractMentions(transcript, entry.title, channel.name);
+    const { companyMentions, marketSignals, policySignals, summary } = await extractMentions(transcript, entry.title, channel.name);
 
-    if (companyMentions.length > 0 || marketSignals.length > 0) {
+    if (companyMentions.length > 0 || marketSignals.length > 0 || policySignals.length > 0) {
       const fullText = `Video: ${entry.title}
 Channel: ${channel.name}
 Published: ${entry.published}
@@ -216,6 +232,7 @@ ${transcript}`;
           summary: summary || entry.summary || '',
           companyMentions,
           marketSignals,
+          policySignals,
         });
       } catch (err) {
         console.error(`[P1] sendAlert FAILED: ${err.message}`);
