@@ -94,38 +94,22 @@ Signal: BUY = endorsed/praising/partnering; SELL = threatening/dropping; WATCH =
   "type": "market_signal"
 }
 
-3. Policy signals — detect any government policy, regulatory action, executive order, law, or government announcement mentioned in the article that could impact a sector or industry. Focus on: export controls / chip bans / semiconductor tariffs, AI regulation, energy policy (data center power), trade deals or sanctions affecting tech supply chains, healthcare/biotech policy, or any named government action affecting a specific industry. These may come from article reporting, not just Jensen's direct quotes.
-{
-  "policy_topic": "concise label (e.g. 'Chip Export Controls', 'AI Regulation', 'Semiconductor Tariffs')",
-  "sector": "the sector most impacted (e.g. 'Technology / Semiconductors', 'AI / Data Centers', 'Energy')",
-  "signal": "BULLISH|BEARISH",
-  "quote": "exact verbatim passage from the article describing or quoting the policy",
-  "context": "2-3 sentences: what the policy is, which sector it affects, why bullish or bearish",
-  "companies": [{"name": "full official company name", "ticker": "EXCHANGE:TICKER"}],
-  "type": "policy_signal"
-}
-Only include companies publicly traded on NYSE, NASDAQ, LSE, TSX, ASX, or similar retail-accessible exchange.
-BULLISH = policy favours the sector; BEARISH = policy harms the sector.
-
-4. Summary: One paragraph on what Jensen Huang specifically said and the market implications. If no direct verbatim quotes exist, state "No direct Jensen Huang verbatim quotes found in this article."
+3. Summary: One paragraph on what Jensen Huang specifically said and the market implications. If no direct verbatim quotes exist, state "No direct Jensen Huang verbatim quotes found in this article."
 
 Return ONLY:
 {
   "companyMentions": [...],
   "marketSignals": [...],
-  "policySignals": [...],
   "summary": "..."
 }`;
 
 function parseClaudeJSON(text) {
   try {
     const match = text.match(/\{[\s\S]*\}/);
-    if (!match) return { companyMentions: [], marketSignals: [], policySignals: [], summary: '' };
-    const parsed = JSON.parse(match[0]);
-    if (!parsed.policySignals) parsed.policySignals = [];
-    return parsed;
+    if (!match) return { companyMentions: [], marketSignals: [], summary: '' };
+    return JSON.parse(match[0]);
   } catch {
-    return { companyMentions: [], marketSignals: [], policySignals: [], summary: '' };
+    return { companyMentions: [], marketSignals: [], summary: '' };
   }
 }
 
@@ -199,12 +183,12 @@ URL: ${item.link}
 ARTICLE:
 ${textToAnalyze}`;
 
-    const { companyMentions, marketSignals, policySignals, summary } = await extractJensenQuotes(
+    const { companyMentions, marketSignals, summary } = await extractJensenQuotes(
       analysisInput, item.title, feed.name
     );
 
     const noQuotesFound = summary && summary.toLowerCase().includes('no direct jensen huang verbatim quotes');
-    const hasContent    = companyMentions.length > 0 || marketSignals.length > 0 || policySignals.length > 0;
+    const hasContent    = companyMentions.length > 0 || marketSignals.length > 0;
 
     if (hasContent && !noQuotesFound) {
       try {
@@ -217,7 +201,6 @@ ${textToAnalyze}`;
           summary: summary || '',
           companyMentions,
           marketSignals,
-          policySignals,
         });
       } catch (err) {
         console.error(`[P3] sendAlert FAILED: ${err.message}`);

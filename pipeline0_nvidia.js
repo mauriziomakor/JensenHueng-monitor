@@ -49,39 +49,22 @@ For each signal:
   "type": "market_signal"
 }
 
-3. Policy signals — detect any government policy, regulatory action, executive order, law, or government announcement that could impact a sector or industry. Focus on: export controls / chip bans / semiconductor tariffs, AI regulation, energy policy (data center power), trade deals or sanctions affecting tech supply chains, healthcare/biotech policy, or any named government action affecting a specific industry.
-For each signal:
-{
-  "policy_topic": "concise label (e.g. 'Chip Export Controls', 'AI Regulation', 'Semiconductor Tariffs')",
-  "sector": "the sector most impacted (e.g. 'Technology / Semiconductors', 'AI / Data Centers', 'Energy')",
-  "signal": "BULLISH|BEARISH",
-  "quote": "exact verbatim passage from the text",
-  "context": "2-3 sentences: what the policy is, which sector it affects, why bullish or bearish",
-  "companies": [{"name": "full official company name", "ticker": "EXCHANGE:TICKER"}],
-  "type": "policy_signal"
-}
-Only include companies publicly traded on NYSE, NASDAQ, LSE, TSX, ASX, or similar retail-accessible exchange.
-BULLISH = policy favours the sector; BEARISH = policy harms the sector.
-
-4. A one-paragraph summary covering what was announced, key partners or companies mentioned, financial figures, and overall market significance.
+3. A one-paragraph summary covering what was announced, key partners or companies mentioned, financial figures, and overall market significance.
 
 Return ONLY this JSON:
 {
   "companyMentions": [...],
   "marketSignals": [...],
-  "policySignals": [...],
   "summary": "..."
 }`;
 
 function parseClaudeJSON(text) {
   try {
     const match = text.match(/\{[\s\S]*\}/);
-    if (!match) return { companyMentions: [], marketSignals: [], policySignals: [], summary: '' };
-    const parsed = JSON.parse(match[0]);
-    if (!parsed.policySignals) parsed.policySignals = [];
-    return parsed;
+    if (!match) return { companyMentions: [], marketSignals: [], summary: '' };
+    return JSON.parse(match[0]);
   } catch {
-    return { companyMentions: [], marketSignals: [], policySignals: [], summary: '' };
+    return { companyMentions: [], marketSignals: [], summary: '' };
   }
 }
 
@@ -161,9 +144,9 @@ async function checkFeed(feed) {
     fullText = fullText || item.description || item.title;
 
     const analysisInput = `Title: ${item.title}\nDate: ${item.pubDate}\nFeed: ${feed.name}\n\n${fullText}`;
-    const { companyMentions, marketSignals, policySignals, summary } = await extractMentions(analysisInput, item.link || feed.url);
+    const { companyMentions, marketSignals, summary } = await extractMentions(analysisInput, item.link || feed.url);
 
-    if (companyMentions.length > 0 || marketSignals.length > 0 || policySignals.length > 0) {
+    if (companyMentions.length > 0 || marketSignals.length > 0) {
       try {
         await sendAlert({
           pipeline: `Pipeline 0 — ${feed.name}`,
@@ -174,7 +157,6 @@ async function checkFeed(feed) {
           summary: summary || item.description || item.title,
           companyMentions,
           marketSignals,
-          policySignals,
         });
       } catch (err) {
         console.error(`[P0] sendAlert FAILED: ${err.message}`);

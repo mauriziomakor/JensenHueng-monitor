@@ -88,46 +88,8 @@ function buildMarketSignalTable(signals) {
     </div>`;
 }
 
-function buildPolicySignalTable(signals) {
-  if (!signals || signals.length === 0) {
-    return '<p style="color:#888;font-style:italic;">No policy signals detected.</p>';
-  }
 
-  const rows = signals.map(s => {
-    const companiesList = (s.companies || [])
-      .map(c => `<span style="display:inline-block;background:#f3e8ff;color:#6b21a8;padding:2px 7px;border-radius:3px;font-size:11px;margin:1px;">${escapeHtml(c.name)}${c.ticker ? ` <b>${escapeHtml(c.ticker)}</b>` : ''}</span>`)
-      .join(' ');
-    return `
-    <tr style="border-bottom:1px solid #e8e8e8;">
-      <td style="padding:10px 12px;font-weight:bold;color:#1a1a2e;white-space:nowrap;">${escapeHtml(s.policy_topic)}</td>
-      <td style="padding:10px 12px;white-space:nowrap;color:#6b21a8;">${escapeHtml(s.sector)}</td>
-      <td style="padding:10px 12px;text-align:center;">${signalBadge(s.signal)}</td>
-      <td style="padding:10px 12px;font-style:italic;color:#333;border-left:3px solid #7c3aed;">"${escapeHtml(s.quote)}"</td>
-      <td style="padding:10px 12px;color:#444;font-size:13px;">${escapeHtml(s.context)}</td>
-      <td style="padding:10px 12px;">${companiesList || '<span style="color:#9ca3af;font-style:italic;">none identified</span>'}</td>
-    </tr>`;
-  }).join('');
-
-  return `
-    <h3 style="color:#7c3aed;border-bottom:2px solid #7c3aed;padding-bottom:8px;margin-top:28px;">Policy Signals</h3>
-    <div style="overflow-x:auto;">
-    <table style="border-collapse:collapse;width:100%;background:#fff;border:1px solid #e0e0e0;border-radius:6px;">
-      <thead>
-        <tr style="background:#7c3aed;color:#fff;">
-          <th style="padding:10px 12px;text-align:left;white-space:nowrap;">Policy Topic</th>
-          <th style="padding:10px 12px;text-align:left;white-space:nowrap;">Sector</th>
-          <th style="padding:10px 12px;text-align:center;">Signal</th>
-          <th style="padding:10px 12px;text-align:left;">Exact Quote</th>
-          <th style="padding:10px 12px;text-align:left;">Context</th>
-          <th style="padding:10px 12px;text-align:left;">Impacted Companies</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-    </div>`;
-}
-
-async function sendAlert({ pipeline, timestamp, title, sourceUrl, fullText, summary, companyMentions, marketSignals, policySignals = [] }) {
+async function sendAlert({ pipeline, timestamp, title, sourceUrl, fullText, summary, companyMentions, marketSignals }) {
   const subject = `[Jensen Monitor | ${pipeline}] ${title}`;
 
   const html = `<!DOCTYPE html>
@@ -164,9 +126,6 @@ async function sendAlert({ pipeline, timestamp, title, sourceUrl, fullText, summ
     <!-- Market Signals Table -->
     ${buildMarketSignalTable(marketSignals)}
 
-    <!-- Policy Signals Table -->
-    ${buildPolicySignalTable(policySignals)}
-
     <!-- Full Original Text -->
     <div style="background:#fafafa;padding:20px;border:1px solid #ddd;border-radius:6px;margin-top:28px;">
       <h3 style="margin:0 0 12px 0;color:#1a1a2e;font-size:14px;text-transform:uppercase;letter-spacing:0.5px;">Full Original Text</h3>
@@ -190,7 +149,7 @@ async function sendAlert({ pipeline, timestamp, title, sourceUrl, fullText, summ
     html,
   });
 
-  console.log(`[Email] Sent: ${(companyMentions||[]).length} companies, ${(marketSignals||[]).length} market signals, ${(policySignals||[]).length} policy signals — "${subject}" → msgId: ${response.headers['x-message-id'] || response.statusCode}`);
+  console.log(`[Email] Sent: "${subject}" → msgId: ${response.headers['x-message-id'] || response.statusCode}`);
 }
 
 module.exports = { sendAlert };
